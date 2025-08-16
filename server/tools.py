@@ -82,10 +82,23 @@ def make_node_fn(node_id: str, text: str):
         seconds = int(re.findall(r"{{timing:elapsed}}(\d+)", text)[0])
         def timing_node(state):
             result = f"[{node_id}] Sleeping for {seconds} seconds..."
-            time.sleep(seconds)
-            print(f"[{node_id}] Woke up, passing state forward.")
+            int(f"[{node_id}] Woke up, passing state forward.")
             state = update_state(state, node_id, result)
-            return state
+            if("{{Human-approval}}" in text):
+                is_approved = interrupt(
+                    {
+                        "question": "continue?",
+                        "state": state
+                    }
+                )
+
+                if is_approved:
+                    return state
+                else:
+                    exit()
+
+            return statetime.sleep(seconds)
+            pr
         return timing_node
 
     elif ("{{timing:set}}" in text):
@@ -100,6 +113,18 @@ def make_node_fn(node_id: str, text: str):
             else:
                 result = f"[{node_id}] Time already passed, continuing immediately."
             state = update_state(state, node_id, result)
+            if("{{Human-approval}}" in text):
+                is_approved = interrupt(
+                    {
+                        "question": "continue?",
+                        "state": state
+                    }
+                )
+
+                if is_approved:
+                    return state
+                else:
+                    exit()
             return state
         return timing_node
 
@@ -113,6 +138,18 @@ def make_node_fn(node_id: str, text: str):
             query = input_val if isinstance(input_val, str) else input_val.get("content", "")
             result = search_and_scrape(query)
             state = update_state(state, node_id, result)
+            if("{{Human-approval}}" in text):
+                is_approved = interrupt(
+                    {
+                        "question": "continue?",
+                        "state": state
+                    }
+                )
+
+                if is_approved:
+                    return state
+                else:
+                    exit()
             return state
         return browse_node
 
@@ -136,40 +173,20 @@ def make_node_fn(node_id: str, text: str):
             answer = input({"prompt": question})
 
             state = update_state(state, node_id, {"humanquestion": question, "answer": answer})
+            if("{{Human-approval}}" in text):
+                is_approved = interrupt(
+                    {
+                        "question": "continue?",
+                        "state": state
+                    }
+                )
+
+                if is_approved:
+                    return state
+                else:
+                    exit()
             return state
         return human_node
-    
-    elif "{{Human-approval}}" in text:
-        def human_approval(state: State):
-        #  -> Command[Literal["some_node", "another_node"]]:
-            # is_approved = interrupt(
-            #     {
-            #         "question": "Is this correct?",
-            #         # Surface the output that should be
-            #         # reviewed and approved by the human.
-            #         "llm_output": state["llm_output"]
-            #     }
-            # )
-
-            # if is_approved:
-            #     return Command(goto="some_node")
-            # else:
-            #     return Command(goto="another_node")
-            result = win32api.MessageBox(
-                0,
-                'Do you want to continue?',
-                'Confirmation',
-                win32con.MB_YESNO | win32con.MB_SYSTEMMODAL
-            )
-
-        
-            # Handle the result
-            if result == win32con.IDYES:
-                state = update_state(state, node_id, result)
-            else:
-                state = update_state(state, node_id, result)
-            return state
-        return human_approval
     
     elif "{{computer}}" in text:
         def computer_node(state : State):
@@ -190,6 +207,18 @@ def make_node_fn(node_id: str, text: str):
             answer = search_and_scrape(question)
 
             state = update_state(state, node_id, {"question": question, "answer": answer})
+            if("{{Human-approval}}" in text):
+                is_approved = interrupt(
+                    {
+                        "question": "continue?",
+                        "state": state
+                    }
+                )
+
+                if is_approved:
+                    return state
+                else:
+                    exit()
             return state
         return computer_node
     
@@ -198,6 +227,18 @@ def make_node_fn(node_id: str, text: str):
             # print(f"[{node_id}] Passing through.")
             result = f"[{node_id}] {text} passing through."
             state[node_id] = {"content": result}
+            if("{{Human-approval}}" in text):
+                is_approved = interrupt(
+                    {
+                        "question": "continue?",
+                        "state": state
+                    }
+                )
+
+                if is_approved:
+                    return state
+                else:
+                    exit()
             return state
         return default_node
 
