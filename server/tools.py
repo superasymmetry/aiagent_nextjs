@@ -78,7 +78,7 @@ class GraphData(TypedDict):
 
 # --- Node Behavior Factory ---
 def make_node_fn(node_id: str, text: str):
-    if text.startswith("{{timing:elapsed}}"):
+    if ("{{timing:elapsed}}" in text):
         seconds = int(re.findall(r"{{timing:elapsed}}(\d+)", text)[0])
         def timing_node(state):
             result = f"[{node_id}] Sleeping for {seconds} seconds..."
@@ -88,7 +88,7 @@ def make_node_fn(node_id: str, text: str):
             return state
         return timing_node
 
-    elif text.startswith("{{timing:set}}"):
+    elif ("{{timing:set}}" in text):
         dt_str = text.split("}}", 1)[1].strip()
         dt = datetime.datetime.fromisoformat(dt_str)
         def timing_node(state: State):
@@ -103,7 +103,7 @@ def make_node_fn(node_id: str, text: str):
             return state
         return timing_node
 
-    elif "{{Researcher}}" in text:
+    elif ("{{Researcher}}" in text):
         def browse_node(state : State):
             # input_val = next(iter(state.values()), None)
             input_val = text.replace("{{Researcher}}", "").strip()
@@ -116,7 +116,7 @@ def make_node_fn(node_id: str, text: str):
             return state
         return browse_node
 
-    elif "{{Human-in-the-loop}}" in text:
+    elif ("{{Human-in-the-loop}}" in text):
         def human_node(state : State):
             input_val = text.replace("{{Human-in-the-loop}}", "").strip()
             print(f"[{node_id}] Human node activated with input: {input_val}")
@@ -193,7 +193,6 @@ def make_node_fn(node_id: str, text: str):
             return state
         return computer_node
     
-
     else:
         def default_node(state : State):
             # print(f"[{node_id}] Passing through.")
@@ -240,10 +239,10 @@ def to_double_quoted_json(single_quoted: str, *, indent: int = None) -> str:
     return json.dumps(obj, indent=indent)
 
 def parse_timing_info(text):
-    if text.startswith("{{timing:set}}"):
+    if ("{{timing:set}}" in text):
         target_time = text[len("{{timing:set}}"):].strip()
         return ("set", target_time)
-    elif text.startswith("{{timing:elapsed}}"):
+    elif ("{{timing:elapsed}}" in text):
         seconds = int(text[len("{{timing:elapsed}}"):].strip())
         return ("elapsed", seconds)
     return None

@@ -10,6 +10,7 @@ const functionsList = [
   { name: 'Researcher', fn: () => console.log('Researching...') },
   { name: 'Timing', fn: () => console.log('Timing...') },
   { name: 'End', fn: () => console.log('Generating code...') },
+  { name: 'Conditional', fn: () => console.log('Conditional node') }
 ];
 
 const handleStyle = { left: 10 };
@@ -19,8 +20,17 @@ function TextUpdaterNode({ id, data }) {
   const [includedFunctions, setIncludedFunctions] = useState(data.functions || []);
   const [showDropdown, setShowDropdown] = useState(false);
   const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0 });
+  const [selectedIndex, setSelectedIndex] = useState(0);
+  const [searchTerm, setSearchTerm] = useState('');
   const textareaRef = useRef(null);
   const updateNodeInternals = useUpdateNodeInternals();
+
+  // Filter functions based on search term
+  const filteredFunctions = searchTerm 
+    ? functionsList.filter(func => 
+        func.name.toLowerCase().includes(searchTerm.toLowerCase())
+      )
+    : functionsList;
 
   // Sync back to node data so it can be extracted
   useEffect(() => {
@@ -33,21 +43,60 @@ function TextUpdaterNode({ id, data }) {
     const value = e.target.value;
     setText(value);
 
-    const lastChar = value.slice(-1);
-    if (lastChar === '/') {
-      const rect = textareaRef.current.getBoundingClientRect();
-      setDropdownPosition({ top: rect.top + 24, left: rect.left + 10 });
-      setShowDropdown(true);
-    } else if (!value.includes('/')) {
+    // Check if there's a slash and extract the search term after it
+    const slashIndex = value.lastIndexOf('/');
+    if (slashIndex !== -1) {
+      const searchAfterSlash = value.substring(slashIndex + 1);
+      setSearchTerm(searchAfterSlash);
+      
+      if (slashIndex === value.length - 1) {
+        // Just typed a slash, show dropdown
+        const rect = textareaRef.current.getBoundingClientRect();
+        setDropdownPosition({ top: rect.top + 24, left: rect.left + 10 });
+        setShowDropdown(true);
+        setSelectedIndex(0);
+      } else if (searchAfterSlash.length >= 0) {
+        // Typing after slash, keep dropdown open and reset selection
+        setShowDropdown(true);
+        setSelectedIndex(0);
+      }
+    } else {
+      // No slash in text, hide dropdown
       setShowDropdown(false);
+      setSelectedIndex(0);
+      setSearchTerm('');
+    }
+  };
+
+  const handleKeyDown = (e) => {
+    if (showDropdown && filteredFunctions.length > 0) {
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        setSelectedIndex((prev) => (prev + 1) % filteredFunctions.length);
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        setSelectedIndex((prev) => (prev - 1 + filteredFunctions.length) % filteredFunctions.length);
+      } else if (e.key === 'Enter') {
+        e.preventDefault();
+        handleFunctionClick(filteredFunctions[selectedIndex]);
+      } else if (e.key === 'Escape') {
+        e.preventDefault();
+        setShowDropdown(false);
+        setSelectedIndex(0);
+        setSearchTerm('');
+      }
     }
   };
 
   const handleFunctionClick = (func) => {
-    const newText = text.replace(/\/$/, `{{${func.name}}}`);
+    // replace the slash stuff with dropdown choices
+    const slashIndex = text.lastIndexOf('/');
+    const newText = text.substring(0, slashIndex) + `{{${func.name}}}`;
     setText(newText);
     setIncludedFunctions((prev) => [...prev, func]);
     setShowDropdown(false);
+    setSearchTerm('');
+    setSelectedIndex(0);
   };
 
   return (
@@ -58,6 +107,7 @@ function TextUpdaterNode({ id, data }) {
           ref={textareaRef}
           value={text}
           onChange={handleChange}
+          onKeyDown={handleKeyDown}
           rows={3}
           className="nodrag"
           placeholder="Type '/' to see functions..."
@@ -79,7 +129,7 @@ function TextUpdaterNode({ id, data }) {
               zIndex: 10,
             }}
           >
-            {functionsList.map((func) => (
+            {filteredFunctions.map((func, index) => (
               <li
                 key={func.name}
                 onClick={() => handleFunctionClick(func)}
@@ -87,6 +137,8 @@ function TextUpdaterNode({ id, data }) {
                   padding: 4,
                   cursor: 'pointer',
                   borderBottom: '1px solid #eee',
+                  backgroundColor: index === selectedIndex ? '#e6f3ff' : 'transparent',
+                  color: index === selectedIndex ? '#0066cc' : 'inherit',
                 }}
               >
                 {func.name}

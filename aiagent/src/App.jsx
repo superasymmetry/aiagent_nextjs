@@ -35,21 +35,11 @@ const rfStyle = {
 
 const initialNodes = [
   { id: '1', type: 'textUpdater', position: { x: 400, y: 50 }, data: { text: '' } },
-  { id: '2', type: 'textUpdater', position: { x: 200, y: 200 }, data: { text: '' } },
-  { id: '3', type: 'textUpdater', position: { x: 600, y: 200 }, data: { text: '' } },
-  { id: '4', type: 'textUpdater', position: { x: 100, y: 350 }, data: { text: '' } },
-  { id: '5', type: 'textUpdater', position: { x: 300, y: 350 }, data: { text: '' } },
-  { id: '6', type: 'textUpdater', position: { x: 500, y: 350 }, data: { text: '' } },
-  { id: '7', type: 'textUpdater', position: { x: 700, y: 350 }, data: { text: '' } },
+  { id: '2', type: 'textUpdater', position: { x: 400, y: 200 }, data: { text: '' } }
 ];
 
 const initialEdges = [
-  { id: 'edge1', source: '1', target: '2', type: 'buttonedge' },
-  { id: 'edge2', source: '1', target: '3', type: 'buttonedge' },
-  { id: 'edge3', source: '2', target: '4', type: 'buttonedge' },
-  { id: 'edge4', source: '2', target: '5', type: 'buttonedge' },
-  { id: 'edge5', source: '3', target: '6', type: 'buttonedge' },
-  { id: 'edge6', source: '3', target: '7', type: 'buttonedge' },
+  { id: 'edge1', source: '1', target: '2', type: 'buttonedge' }
 ];
 
 // const centerX = 600;
