@@ -27,6 +27,10 @@ def update_state(state, node_id, content):
 
 State = Dict[str, Any]
 
+class GraphState(TypedDict):
+    messages: Annotated[List[str], operator.add]
+    data: Dict[str, Any]
+
 class MyState(State):
     state: Annotated[list[str], operator.add]
 
@@ -187,6 +191,7 @@ def make_node_fn(node_id: str, text: str):
                     exit()
             return state
         return human_node
+
     
     elif "{{computer}}" in text:
         def computer_node(state : State):
@@ -222,6 +227,33 @@ def make_node_fn(node_id: str, text: str):
             return state
         return computer_node
     
+    elif "{{Conditional}}" in text:
+        def conditional_node(state: State):
+            condition_text = text.replace("{{Conditional}}", "").strip()
+            print(f"[{node_id}] Conditional node: {condition_text}")
+            
+            # Simple evaluation - check for "true" or "false" keywords
+            result = "true" in condition_text.lower() or "sunday" in condition_text.lower()
+            
+            state = update_state(state, node_id, f"Condition evaluated to: {result}")
+            # Store condition result for routing
+            state[f"{node_id}_condition"] = result
+            
+            if("{{Human-approval}}" in text):
+                is_approved = interrupt(
+                    {
+                        "question": "continue?",
+                        "state": state
+                    }
+                )
+
+                if is_approved:
+                    return state
+                else:
+                    exit()
+            return state
+        return conditional_node
+    
     else:
         def default_node(state : State):
             # print(f"[{node_id}] Passing through.")
@@ -246,7 +278,6 @@ def make_node_fn(node_id: str, text: str):
 def create_langgraph(data: GraphData):
     node_ids = [n["id"] for n in data["nodeTexts"]]
     node_text_map = {n["id"]: n.get("text", "") for n in data["nodeTexts"]}
-    GraphState = Dict[str, Any]
 
     builder = StateGraph(GraphState)
 
@@ -262,14 +293,34 @@ def create_langgraph(data: GraphData):
 
     for node_id in node_ids:
         next_nodes = edges_by_source.get(node_id, [])
+        node_text = node_text_map[node_id]
+        
         if not next_nodes:
             builder.add_edge(node_id, END)
         elif len(next_nodes) == 1:
             builder.add_edge(node_id, next_nodes[0])
+        elif len(next_nodes) == 2 and "{{Conditional}}" in node_text:
+            # Conditional routing: first edge is TRUE, second is FALSE
+            true_target = next_nodes[0]
+            false_target = next_nodes[1]
+            
+            def make_conditional_router(source_node, true_node, false_node):
+                def conditional_router(state):
+                    condition_result = state.get(f"{source_node}_condition", True)
+                    return true_node if condition_result else false_node
+                return conditional_router
+            
+            router = make_conditional_router(node_id, true_target, false_target)
+            builder.add_conditional_edges(node_id, router, [true_target, false_target])
         else:
-            def router(state, *, options=next_nodes):
-                return options
-            builder.add_conditional_edges(node_id, router)
+            # Multiple edges - return first one for simplicity
+            def make_simple_router(options):
+                def simple_router(state):
+                    return options[0]
+                return simple_router
+            
+            router = make_simple_router(next_nodes)
+            builder.add_conditional_edges(node_id, router, next_nodes)
 
     entry = node_ids[0]
     builder.set_entry_point(entry)
@@ -290,27 +341,32 @@ def parse_timing_info(text):
 
 if __name__ == "__main__":
 
+    # Simple conditional example
     y = {
         "nodeTexts": [
             {"id": "main", "text": "Start Node"},
-            {"id": "timed1", "text": "{{timing:set}}2025-04-19 10:50"},
-            {"id": "next", "text": "{{Researcher}} what is ai?"},
+            {"id": "cond", "text": "{{Conditional}} false"},
+            {"id": "true_path", "text": "Taking TRUE path"},
+            {"id": "false_path", "text": "Taking FALSE path"}
         ],
         "edges": [
-            {"id": "edge1", "source": "main", "target": "timed1", "type": "buttonedge"},
-            {"id": "edge2", "source": "timed1", "target": "next", "type": "buttonedge"},
+            {"id": "edge1", "source": "main", "target": "cond", "type": "buttonedge"},
+            {"id": "edge_true", "source": "cond", "target": "true_path", "type": "buttonedge"},
+            {"id": "edge_false", "source": "cond", "target": "false_path", "type": "buttonedge"}
         ]
     }
+    
+    print("Graph structure:")
     print(y)
-    g=create_langgraph(y)
-    print(g.invoke({"state": "Start"}))
-    last_state = None
-    for event in g.stream({"state": "Start"}):
-        last_key = list(event.keys())[-1]
-        last_value = event[last_key]
-
-        try:
-            print(f"Last executed node: {last_key} | Output: {last_value['content']}")
-        except KeyError:
-            print(f"Last executed node: {last_key} | Output: {last_value[last_key]['content']}")
-
+    g = create_langgraph(y)
+    
+    # Initialize state properly for GraphState
+    initial_state = {"messages": [], "data": {}}
+    
+    print("\nRunning graph:")
+    result = g.invoke(initial_state)
+    print("Final result:", result)
+    
+    print("\nStream execution:")
+    for event in g.stream(initial_state):
+        print("Event:", event)
