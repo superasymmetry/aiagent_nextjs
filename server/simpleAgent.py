@@ -16,9 +16,9 @@ import inspectTree
 
 omniParser_setUp=False
 
-#My key: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
-#Coco's key: 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
-client = Groq(api_key = "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")
+with open("GROQ_API_KEY.json") as f:
+    data = json.load(f)
+    client = Groq(api_key=data["api_key"])
 
 print("ALL IMPORTS COMPLETE")
 
