@@ -97,7 +97,6 @@ export default function App() {
     [setEdges]
   );
 
-  // Right click handler
   const handleNodeRightClick = (event, node) => {
     event.preventDefault();
     setSelectedNode(node);
