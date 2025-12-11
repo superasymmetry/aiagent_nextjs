@@ -1,3 +1,5 @@
+// FOR FLOWCHART EDGES
+
 import React from 'react';
 import {
   BaseEdge,

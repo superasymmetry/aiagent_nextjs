@@ -12,8 +12,8 @@ import {
 } from '@xyflow/react';
 
 import '@xyflow/react/dist/style.css';
-import TextUpdaterNode from './TextUpdaterNode.jsx';
-import ButtonEdge from './ButtonEdge';
+import TextUpdaterNode from './components/TextUpdaterNode.jsx';
+import ButtonEdge from './components/ButtonEdge.js';
 import axios from 'axios';
 import Modal from './components/Modal.jsx';
 import { fetchEventSource } from '@microsoft/fetch-event-source';

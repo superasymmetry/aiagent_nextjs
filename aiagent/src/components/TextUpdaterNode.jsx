@@ -1,3 +1,5 @@
+// FOR DROPDOWN IN TEXT AREA IN NODE TEXT
+
 import React, { useState, useRef, useEffect } from 'react';
 import { Handle, Position, useUpdateNodeInternals } from '@xyflow/react';
 
